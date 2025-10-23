@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>扇形辨識挑戰 v8（頭像放大＋五列三排）</title>
+  <title>扇形辨識挑戰 v9（修正版）</title>
   <style>
     :root{
       --bg:#FFF7F0; --card:#FFFFFF; --primary:#FFB84D; --primary-2:#FF8FB2; --accent:#71D0FF; --good:#30C48D; --bad:#FF5A5F; --ink:#2C2C2C; --muted:#7B7B7B; --shadow:0 10px 24px rgba(0,0,0,.12); --r:18px;
@@ -81,47 +81,197 @@
   <audio id="bgm" src="背景音效.mp3" loop></audio>
 
   <script type="module">
-    // 初始化
-    localStorage.removeItem('sectors_local');
+    // ✅ 修正：不要清空排行榜
+    // localStorage.removeItem('sectors_local');
+
     const avatarSet=['🐻','🐰','🐼','🐱','🐸','🦊','🐨','🐯','🐹','🐵','🦄','🐧','🐥','🐙','🐞'];
     const avatarBox=document.getElementById('avatars');
     const state={player:{name:'',seat:'',avatar:avatarSet[0]},playing:false,tLeft:60,score:0,combo:0,bestCombo:0,timer:null,spawn:null};
 
-    // 生成頭像
-    avatarSet.forEach((av,i)=>{const b=document.createElement('button');b.className='avatar';b.textContent=av;if(i===0)b.classList.add('selected');b.onclick=()=>{document.querySelectorAll('.avatar').forEach(a=>a.classList.remove('selected'));b.classList.add('selected');state.player.avatar=av;tryPlayBgm();};avatarBox.appendChild(b);});
+    avatarSet.forEach((av,i)=>{
+      const b=document.createElement('button');
+      b.className='avatar';
+      b.textContent=av;
+      if(i===0)b.classList.add('selected');
+      b.onclick=()=>{
+        document.querySelectorAll('.avatar').forEach(a=>a.classList.remove('selected'));
+        b.classList.add('selected');
+        state.player.avatar=av;
+        tryPlayBgm();
+      };
+      avatarBox.appendChild(b);
+    });
 
-    const viewLogin=document.getElementById('view-login');const viewGame=document.getElementById('view-game');const viewEnd=document.getElementById('view-end');
-    const gameWrap=document.getElementById('gameWrap');const hudName=document.getElementById('hudName');const hudScore=document.getElementById('hudScore');const hudCombo=document.getElementById('hudCombo');const hudTime=document.getElementById('hudTime');
-    const finalScore=document.getElementById('finalScore');const finalCombo=document.getElementById('finalCombo');const resultBadge=document.getElementById('resultBadge');const boardBody=document.getElementById('boardBody');
+    const viewLogin=document.getElementById('view-login');
+    const viewGame=document.getElementById('view-game');
+    const viewEnd=document.getElementById('view-end');
+    const gameWrap=document.getElementById('gameWrap');
+    const hudName=document.getElementById('hudName');
+    const hudScore=document.getElementById('hudScore');
+    const hudCombo=document.getElementById('hudCombo');
+    const hudTime=document.getElementById('hudTime');
+    const finalScore=document.getElementById('finalScore');
+    const finalCombo=document.getElementById('finalCombo');
+    const resultBadge=document.getElementById('resultBadge');
+    const boardBody=document.getElementById('boardBody');
 
-    const bgm=document.getElementById('bgm');const btnMusic=document.getElementById('btnMusic');let bgmReady=false;
+    const bgm=document.getElementById('bgm');
+    const btnMusic=document.getElementById('btnMusic');
+    let bgmReady=false;
     async function tryPlayBgm(){try{await bgm.play();bgmReady=true;}catch(e){}}
     window.addEventListener('load',tryPlayBgm);
-    btnMusic.onclick=()=>{bgm.muted=!bgm.muted;btnMusic.textContent=bgm.muted?'🔇 已靜音':'🔈 音樂開關';if(!bgmReady)tryPlayBgm();};
+    btnMusic.onclick=()=>{
+      bgm.muted=!bgm.muted;
+      btnMusic.textContent=bgm.muted?'🔇 已靜音':'🔈 音樂開關';
+      if(!bgmReady)tryPlayBgm();
+    };
 
     const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    function playCorrect(){const o=audioCtx.createOscillator();const g=audioCtx.createGain();o.type='sine';o.frequency.value=880;g.gain.setValueAtTime(0.001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.2,audioCtx.currentTime+0.01);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.25);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.26);}
-    function playWrong(){const o=audioCtx.createOscillator();const g=audioCtx.createGain();o.type='square';o.frequency.value=220;g.gain.setValueAtTime(0.001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.25,audioCtx.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.4);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+0.42);}
+    function playCorrect(){
+      const o=audioCtx.createOscillator();
+      const g=audioCtx.createGain();
+      o.type='sine';o.frequency.value=880;
+      g.gain.setValueAtTime(0.001,audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.2,audioCtx.currentTime+0.01);
+      g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.25);
+      o.connect(g);g.connect(audioCtx.destination);
+      o.start();o.stop(audioCtx.currentTime+0.26);
+    }
+    function playWrong(){
+      const o=audioCtx.createOscillator();
+      const g=audioCtx.createGain();
+      o.type='square';o.frequency.value=220;
+      g.gain.setValueAtTime(0.001,audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.25,audioCtx.currentTime+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.4);
+      o.connect(g);g.connect(audioCtx.destination);
+      o.start();o.stop(audioCtx.currentTime+0.42);
+    }
 
-    document.getElementById('btnStart').onclick=()=>{const n=document.getElementById('name').value.trim();const s=document.getElementById('seat').value.trim();if(!n||!s){alert('請輸入姓名與座號');return;}state.player.name=n;state.player.seat=s;hudName.textContent=`${state.player.avatar} ${n} #${s}`;startGame();tryPlayBgm();};
+    document.getElementById('btnStart').onclick=()=>{
+      const n=document.getElementById('name').value.trim();
+      const s=document.getElementById('seat').value.trim();
+      if(!n||!s){alert('請輸入姓名與座號');return;}
+      state.player.name=n;
+      state.player.seat=s;
+      hudName.textContent=`${state.player.avatar} ${n} #${s}`;
+      startGame();tryPlayBgm();
+    };
     document.getElementById('btnBack').onclick=()=>show(viewLogin);
     document.getElementById('btnReplay').onclick=()=>{show(viewGame);startGame();tryPlayBgm();};
 
     function show(v){[viewLogin,viewGame,viewEnd].forEach(e=>{e.classList.remove('active');});setTimeout(()=>{v.classList.add('active');},50);}
 
-    const images=[{src:'投影片1.JPG',isSector:true},{src:'投影片2.JPG',isSector:true},{src:'投影片3.JPG',isSector:true},{src:'投影片4.JPG',isSector:true},{src:'投影片5.JPG',isSector:true},{src:'投影片6.JPG',isSector:true},{src:'投影片7.JPG',isSector:false},{src:'投影片8.JPG',isSector:false},{src:'投影片9.JPG',isSector:false},{src:'投影片10.JPG',isSector:false}];
+    const images=[
+      {src:'投影片1.JPG',isSector:true},
+      {src:'投影片2.JPG',isSector:true},
+      {src:'投影片3.JPG',isSector:true},
+      {src:'投影片4.JPG',isSector:true},
+      {src:'投影片5.JPG',isSector:true},
+      {src:'投影片6.JPG',isSector:true},
+      {src:'投影片7.JPG',isSector:false},
+      {src:'投影片8.JPG',isSector:false},
+      {src:'投影片9.JPG',isSector:false},
+      {src:'投影片10.JPG',isSector:false}
+    ];
 
-    function startGame(){state.playing=true;state.tLeft=60;state.score=0;state.combo=0;state.bestCombo=0;hudScore.textContent='0';hudCombo.textContent='0';hudTime.textContent='60';gameWrap.innerHTML='';show(viewGame);state.timer=setInterval(()=>{state.tLeft--;hudTime.textContent=state.tLeft;if(state.tLeft<=0)endGame(true);},1000);state.spawn=setInterval(spawn,650);}
-    function endGame(timeUp){if(!state.playing)return;state.playing=false;clearInterval(state.timer);clearInterval(state.spawn);const record={name:state.player.name,seat:state.player.seat,avatar:state.player.avatar,score:state.score,bestCombo:state.bestCombo,createdAt:Date.now()};
+    function startGame(){
+      state.playing=true;
+      state.tLeft=60;
+      state.score=0;
+      state.combo=0;
+      state.bestCombo=0;
+      hudScore.textContent='0';
+      hudCombo.textContent='0';
+      hudTime.textContent='60';
+      gameWrap.innerHTML='';
+      show(viewGame);
+      state.timer=setInterval(()=>{
+        state.tLeft--;
+        hudTime.textContent=state.tLeft;
+        if(state.tLeft<=0)endGame(true);
+      },1000);
+      state.spawn=setInterval(spawn,650);
+    }
+
+    function endGame(timeUp){
+      if(!state.playing)return;
+      state.playing=false;
+      clearInterval(state.timer);
+      clearInterval(state.spawn);
+      const record={name:state.player.name,seat:state.player.seat,avatar:state.player.avatar,score:state.score,bestCombo:state.bestCombo,createdAt:Date.now()};
       let rows=JSON.parse(localStorage.getItem('sectors_local')||'[]');
       const idx=rows.findIndex(r=>r.name===record.name&&r.seat===record.seat);
       if(idx>-1){ if(record.score>rows[idx].score) rows[idx]=record; } else { rows.push(record); }
       localStorage.setItem('sectors_local',JSON.stringify(rows));
-      finalScore.textContent=state.score;finalCombo.textContent=state.bestCombo;resultBadge.textContent=timeUp?'⏳ 挑戰成功':'💥 點錯了';show(viewEnd);loadLeaderboard();}
+      finalScore.textContent=state.score;
+      finalCombo.textContent=state.bestCombo;
+      resultBadge.textContent=timeUp?'⏳ 挑戰結束':'💥 點錯了';
+      show(viewEnd);
+      loadLeaderboard();
+    }
 
-    function spawn(){if(!state.playing)return;const it=images[Math.floor(Math.random()*images.length)];const el=document.createElement('div');el.className='fall-item';const img=document.createElement('img');img.src=it.src;el.appendChild(img);el.style.left=Math.random()*(gameWrap.clientWidth-160)+'px';el.style.top='-180px';el.onclick=(e)=>{e.stopPropagation();if(!state.playing)return;if(it.isSector){playCorrect();state.combo++;state.bestCombo=Math.max(state.combo,state.bestCombo);state.score+=10*state.combo;hudScore.textContent=state.score;hudCombo.textContent=state.combo;el.remove();}else{playWrong();endGame(false);}};gameWrap.appendChild(el);let y=-180;const fall=()=>{if(!state.playing){el.remove();return;}y+=2.4;el.style.top=y+'px';if(y>gameWrap.clientHeight){state.combo=0;hudCombo.textContent=0;el.remove();return;}requestAnimationFrame(fall);};requestAnimationFrame(fall);}
+    function spawn(){
+      if(!state.playing)return;
+      const it=images[Math.floor(Math.random()*images.length)];
+      const el=document.createElement('div');
+      el.className='fall-item';
+      const img=document.createElement('img');
+      img.src=it.src;
+      el.appendChild(img);
+      el.style.left=Math.random()*(gameWrap.clientWidth-160)+'px';
+      el.style.top='-180px';
+      let clicked=false;
 
-    function loadLeaderboard(){const rows=JSON.parse(localStorage.getItem('sectors_local')||'[]');rows.sort((a,b)=>b.score-a.score||a.createdAt-b.createdAt);const isMe=r=>r.name===state.player.name&&r.seat===state.player.seat;boardBody.innerHTML=rows.slice(0,20).map((r,i)=>{const dt=new Date(r.createdAt);const t=dt.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});const c=isMe(r)?' class="me"':'';return `<tr${c}><td>${i+1}</td><td>${r.avatar||'👤'} ${r.name}</td><td>#${r.seat}</td><td>${r.score}</td><td>${r.bestCombo}</td><td>${t}</td></tr>`;}).join('');}
+      el.onclick=(e)=>{
+        e.stopPropagation();
+        if(!state.playing)return;
+        if(clicked)return;
+        clicked=true;
+        if(it.isSector){
+          playCorrect();
+          state.combo++;
+          state.bestCombo=Math.max(state.combo,state.bestCombo);
+          state.score+=10*state.combo;
+          hudScore.textContent=state.score;
+          hudCombo.textContent=state.combo;
+          el.remove();
+        }else{
+          playWrong();
+          endGame(false);
+        }
+      };
+
+      gameWrap.appendChild(el);
+      let y=-180;
+      const fall=()=>{
+        if(!state.playing){el.remove();return;}
+        y+=2.4;
+        el.style.top=y+'px';
+        if(y>gameWrap.clientHeight){
+          if(!clicked){ // ✅ 只在沒被點中時歸零
+            state.combo=0;
+            hudCombo.textContent=0;
+          }
+          el.remove();
+          return;
+        }
+        requestAnimationFrame(fall);
+      };
+      requestAnimationFrame(fall);
+    }
+
+    function loadLeaderboard(){
+      const rows=JSON.parse(localStorage.getItem('sectors_local')||'[]');
+      rows.sort((a,b)=>b.score-a.score||a.createdAt-b.createdAt);
+      const isMe=r=>r.name===state.player.name&&r.seat===state.player.seat;
+      boardBody.innerHTML=rows.slice(0,20).map((r,i)=>{
+        const dt=new Date(r.createdAt);
+        const t=dt.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+        const c=isMe(r)?' class="me"':'';
+        return `<tr${c}><td>${i+1}</td><td>${r.avatar||'👤'} ${r.name}</td><td>#${r.seat}</td><td>${r.score}</td><td>${r.bestCombo}</td><td>${t}</td></tr>`;
+      }).join('');
+    }
 
     show(viewLogin);
   </script>
